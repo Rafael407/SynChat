@@ -1,0 +1,22 @@
+# build output
+target/
+
+# runtime database
+*.db
+*.db-shm
+*.db-wal
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Eclipse / VS Code
+.classpath
+.project
+.settings/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
