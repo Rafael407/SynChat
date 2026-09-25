@@ -39,13 +39,14 @@ public class ClientApp extends Application {
 
     /** Opens the TCP connection to the local server. */
     private void connect() {
+        String host = System.getProperty("server.host",Protocol.HOST);
         try {
-            connection.connect(Protocol.HOST, Protocol.PORT);
+            connection.connect(host, Protocol.PORT);
             connection.setOnDisconnect(this::handleDisconnect);
         } catch (IOException e) {
             Alert alert = new Alert(Alert.AlertType.ERROR,
                     "Could not reach the SynChat server at "
-                            + Protocol.HOST + ":" + Protocol.PORT + ".\n\n"
+                            + host + ":" + Protocol.PORT + ".\n\n"
                             + "Start it first with:  mvn exec:java\n\n"
                             + "Details: " + e.getMessage());
             alert.setHeaderText("Server unavailable");

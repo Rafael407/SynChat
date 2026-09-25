@@ -4,7 +4,7 @@ import com.synchat.common.Packet;
 import com.synchat.common.Protocol;
 
 import java.io.IOException;
-import java.net.InetAddress;
+//import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -60,10 +60,10 @@ public class ChatServer {
 
     public void start() throws IOException {
         // bound to the loopback address: the server is reachable from this machine only
-        serverSocket = new ServerSocket(port, 50, InetAddress.getByName(Protocol.HOST));
+        serverSocket = new ServerSocket(port, 50);
         running = true;
 
-        System.out.println("[SRV] SynChat server listening on " + Protocol.HOST + ":" + port);
+        System.out.println("[SRV] SynChat server listening on " + port);
         System.out.println("[SRV] worker pool size = " + MAX_CONCURRENT_CLIENTS);
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop, "shutdown-hook"));
