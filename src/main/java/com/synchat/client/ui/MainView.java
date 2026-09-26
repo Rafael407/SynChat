@@ -1,12 +1,15 @@
 package com.synchat.client.ui;
 
 import com.synchat.client.ClientApp;
+import com.synchat.client.Joke_api.Joke;
+import com.synchat.client.Joke_api.JokeApiClient;
 import com.synchat.client.net.ClientConnection;
 import com.synchat.common.Packet;
 import com.synchat.common.Protocol;
 import com.synchat.common.dto.ChatMessageDto;
 import com.synchat.common.dto.FriendRequestDto;
 import com.synchat.common.dto.UserDto;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -23,8 +26,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 
 import java.util.List;
 
@@ -59,6 +62,7 @@ public class MainView extends BorderPane {
         this.connection = connection;
         this.me = me;
 
+        setBackground(Theme.fill(Theme.SURFACE, 0));
         setTop(buildHeader());
         setLeft(buildSidebar());
         setCenter(buildChatPane());
@@ -73,21 +77,27 @@ public class MainView extends BorderPane {
     /* ==================================================================== */
 
     private Region buildHeader() {
+        Label brand = new Label("SynChat");
+        Theme.titleStyle(brand, 16);
+
         Label who = new Label("Signed in as " + me);
-        who.setFont(Font.font("System", FontWeight.BOLD, 14));
+        Theme.mutedStyle(who);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Button changePassword = new Button("Change password");
+        Theme.secondaryButton(changePassword);
         changePassword.setOnAction(e -> Dialogs.changePassword(connection));
 
         Button logout = new Button("Log out");
+        Theme.secondaryButton(logout);
         logout.setOnAction(e -> doLogout());
 
-        HBox bar = new HBox(10, who, spacer, changePassword, logout);
-        bar.setPadding(new Insets(10));
+        HBox bar = new HBox(14, brand, who, spacer, changePassword, logout);
+        bar.setPadding(new Insets(12, 16, 12, 16));
         bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setBackground(Theme.fill(Theme.ACCENT_LIGHT, 0));
         return bar;
     }
 
@@ -95,12 +105,24 @@ public class MainView extends BorderPane {
         /* --- friends ---------------------------------------------------- */
         friendsView.setPlaceholder(new Label("No friends yet.\nFind people in the Search tab."));
         friendsView.setCellFactory(lv -> new ListCell<>() {
+            private final Circle dot = new Circle(4);
+            private final Label nameLabel = new Label();
+            private final HBox row = new HBox(8, dot, nameLabel);
+
+            {
+                row.setAlignment(Pos.CENTER_LEFT);
+            }
+
             @Override
             protected void updateItem(UserDto user, boolean empty) {
                 super.updateItem(user, empty);
-                setText(empty || user == null
-                        ? null
-                        : (user.online ? "● " : "○ ") + user.username);
+                if (empty || user == null) {
+                    setGraphic(null);
+                    return;
+                }
+                dot.setFill(user.online ? Theme.ONLINE : Theme.OFFLINE);
+                nameLabel.setText(user.username);
+                setGraphic(row);
             }
         });
         friendsView.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
@@ -110,6 +132,7 @@ public class MainView extends BorderPane {
         });
 
         Button refreshFriends = new Button("Refresh");
+        Theme.secondaryButton(refreshFriends);
         refreshFriends.setMaxWidth(Double.MAX_VALUE);
         refreshFriends.setOnAction(e -> refreshFriends());
 
@@ -129,6 +152,8 @@ public class MainView extends BorderPane {
 
         Button accept = new Button("Accept");
         Button reject = new Button("Reject");
+        Theme.primaryButton(accept);
+        Theme.secondaryButton(reject);
         accept.setOnAction(e -> respondToRequest(true));
         reject.setOnAction(e -> respondToRequest(false));
         HBox requestButtons = new HBox(8, accept, reject);
@@ -142,6 +167,7 @@ public class MainView extends BorderPane {
         TextField searchField = new TextField();
         searchField.setPromptText("Search username");
         Button searchButton = new Button("Go");
+        Theme.primaryButton(searchButton);
         searchButton.setOnAction(e -> searchUsers(searchField.getText()));
         searchField.setOnAction(e -> searchUsers(searchField.getText()));
         HBox searchRow = new HBox(6, searchField, searchButton);
@@ -159,6 +185,7 @@ public class MainView extends BorderPane {
         });
 
         Button addFriend = new Button("Send friend request");
+        Theme.primaryButton(addFriend);
         addFriend.setMaxWidth(Double.MAX_VALUE);
         addFriend.setOnAction(e -> sendFriendRequest());
 
@@ -183,7 +210,7 @@ public class MainView extends BorderPane {
     }
 
     private Region buildChatPane() {
-        chatHeader.setFont(Font.font("System", FontWeight.BOLD, 15));
+        Theme.titleStyle(chatHeader, 16);
 
         messagesView.setPlaceholder(new Label("No messages yet."));
         messagesView.setCellFactory(lv -> new ListCell<>() {
@@ -195,11 +222,20 @@ public class MainView extends BorderPane {
                     setGraphic(null);
                     return;
                 }
-                Label bubble = new Label("[" + m.shortTime() + "] "
-                        + (m.from.equals(me) ? "You" : m.from) + ": " + m.content);
+                boolean mine = m.from.equals(me);
+
+                Label bubble = new Label("[" + m.shortTime() + "] " + m.content);
                 bubble.setWrapText(true);
-                bubble.maxWidthProperty().bind(lv.widthProperty().subtract(40));
-                setGraphic(bubble);
+                bubble.maxWidthProperty().bind(lv.widthProperty().multiply(0.7));
+                bubble.setPadding(new Insets(8, 12, 8, 12));
+                bubble.setBackground(Theme.fill(mine ? Theme.BUBBLE_MINE : Theme.BUBBLE_THEIRS, 12));
+                bubble.setTextFill(mine ? Color.WHITE : Color.web("#2B2D3A"));
+
+                HBox row = new HBox(bubble);
+                row.setAlignment(mine ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+                row.setPadding(new Insets(3, 4, 3, 4));
+
+                setGraphic(row);
                 setText(null);
             }
         });
@@ -207,13 +243,21 @@ public class MainView extends BorderPane {
         messageField.setPromptText("Write a message and press Enter");
         messageField.setOnAction(e -> sendMessage());
         sendButton.setOnAction(e -> sendMessage());
-        HBox inputRow = new HBox(8, messageField, sendButton);
+        Theme.primaryButton(sendButton);
+
+        Button icebreakerButton = new Button("🎲 Icebreaker");
+        Theme.secondaryButton(icebreakerButton);
+        icebreakerButton.setOnAction(e -> fetchIcebreaker());
+
+        HBox inputRow = new HBox(8, messageField, icebreakerButton, sendButton);
+        inputRow.setAlignment(Pos.CENTER);
         HBox.setHgrow(messageField, Priority.ALWAYS);
 
         setChatEnabled(false);
 
         VBox box = new VBox(8, chatHeader, messagesView, inputRow, statusLabel);
-        box.setPadding(new Insets(10));
+        box.setPadding(new Insets(14));
+        box.setBackground(Theme.fill(Color.WHITE, 0));
         VBox.setVgrow(messagesView, Priority.ALWAYS);
         return box;
     }
@@ -221,6 +265,34 @@ public class MainView extends BorderPane {
     private void setChatEnabled(boolean enabled) {
         messageField.setDisable(!enabled);
         sendButton.setDisable(!enabled);
+    }
+
+    /**
+     * Fetches a random joke from a public JSON API (JokeAPI) and drops it into
+     * the message box for the user to review and send — a chat-adjacent use of
+     * the same "call a REST API, parse the JSON into an object" pattern used
+     * by PostApiClient, but this one actually feeds into a real message.
+     * HttpClient.send() blocks, so the fetch runs off the FX thread.
+     */
+    private void fetchIcebreaker() {
+        if (currentPeer == null) {
+            status("Open a conversation with a friend first.");
+            return;
+        }
+        status("Fetching a random icebreaker...");
+        Thread worker = new Thread(() -> {
+            try {
+                Joke joke = JokeApiClient.fetchRandomJoke();
+                Platform.runLater(() -> {
+                    messageField.setText(joke.getJoke());
+                    status("Icebreaker loaded — edit it or hit Enter to send.");
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> status("Could not fetch an icebreaker: " + ex.getMessage()));
+            }
+        }, "icebreaker-fetch");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     /* ==================================================================== */

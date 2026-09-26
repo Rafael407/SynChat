@@ -12,8 +12,6 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 
 /** Username + password, or a jump to the registration screen. */
 public class LoginView extends VBox {
@@ -30,14 +28,15 @@ public class LoginView extends VBox {
         this.app = app;
         this.connection = connection;
 
-        setSpacing(12);
-        setPadding(new Insets(30));
+        setSpacing(0);
         setAlignment(Pos.CENTER);
+        setBackground(Theme.fill(Theme.SURFACE, 0));
 
         Label title = new Label("SynChat");
-        title.setFont(Font.font("System", FontWeight.BOLD, 26));
+        Theme.titleStyle(title, 28);
 
         Label subtitle = new Label("Sign in to continue");
+        Theme.mutedStyle(subtitle);
 
         usernameField.setPromptText("Username");
         usernameField.setMaxWidth(260);
@@ -47,10 +46,12 @@ public class LoginView extends VBox {
         loginButton.setDefaultButton(true);
         loginButton.setPrefWidth(120);
         loginButton.setOnAction(e -> doLogin());
+        Theme.primaryButton(loginButton);
 
         Button registerButton = new Button("Create account");
-        registerButton.setPrefWidth(130);
+        registerButton.setPrefWidth(140);
         registerButton.setOnAction(e -> app.showRegister());
+        Theme.secondaryButton(registerButton);
 
         HBox buttons = new HBox(10, loginButton, registerButton);
         buttons.setAlignment(Pos.CENTER);
@@ -58,10 +59,17 @@ public class LoginView extends VBox {
         statusLabel.setWrapText(true);
         statusLabel.setMaxWidth(280);
         statusLabel.setAlignment(Pos.CENTER);
+        Theme.mutedStyle(statusLabel);
 
         passwordField.setOnAction(e -> doLogin());
 
-        getChildren().addAll(title, subtitle, usernameField, passwordField, buttons, statusLabel);
+        VBox card = new VBox(12, title, subtitle, usernameField, passwordField, buttons, statusLabel);
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(32));
+        card.setMaxWidth(340);
+        Theme.card(card);
+
+        getChildren().add(card);
     }
 
     private void doLogin() {

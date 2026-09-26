@@ -12,8 +12,6 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 
 /** Create an account, with an explicit "is this username free?" check. */
 public class RegisterView extends VBox {
@@ -30,12 +28,12 @@ public class RegisterView extends VBox {
         this.app = app;
         this.connection = connection;
 
-        setSpacing(12);
-        setPadding(new Insets(30));
+        setSpacing(0);
         setAlignment(Pos.CENTER);
+        setBackground(Theme.fill(Theme.SURFACE, 0));
 
         Label title = new Label("Create your account");
-        title.setFont(Font.font("System", FontWeight.BOLD, 22));
+        Theme.titleStyle(title, 22);
 
         usernameField.setPromptText("Username (3-20 characters)");
         usernameField.setMaxWidth(220);
@@ -45,6 +43,7 @@ public class RegisterView extends VBox {
         confirmField.setMaxWidth(260);
 
         Button checkButton = new Button("Check");
+        Theme.secondaryButton(checkButton);
         checkButton.setOnAction(e -> checkUsername());
 
         HBox usernameRow = new HBox(8, usernameField, checkButton);
@@ -55,10 +54,12 @@ public class RegisterView extends VBox {
         registerButton.setDefaultButton(true);
         registerButton.setPrefWidth(120);
         registerButton.setOnAction(e -> doRegister());
+        Theme.primaryButton(registerButton);
 
         Button backButton = new Button("Back to login");
-        backButton.setPrefWidth(120);
+        backButton.setPrefWidth(130);
         backButton.setOnAction(e -> app.showLogin());
+        Theme.secondaryButton(backButton);
 
         HBox buttons = new HBox(10, registerButton, backButton);
         buttons.setAlignment(Pos.CENTER);
@@ -66,8 +67,15 @@ public class RegisterView extends VBox {
         statusLabel.setWrapText(true);
         statusLabel.setMaxWidth(300);
         statusLabel.setAlignment(Pos.CENTER);
+        Theme.mutedStyle(statusLabel);
 
-        getChildren().addAll(title, usernameRow, passwordField, confirmField, buttons, statusLabel);
+        VBox card = new VBox(12, title, usernameRow, passwordField, confirmField, buttons, statusLabel);
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(32));
+        card.setMaxWidth(360);
+        Theme.card(card);
+
+        getChildren().add(card);
     }
 
     /** Asks the server whether the username is still free. */
