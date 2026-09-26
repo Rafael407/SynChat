@@ -12,10 +12,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Friend requests and the friendship graph. */
+
 public class FriendDao {
 
-    /** Outcome of a request that was answered. */
     public record Answered(int senderId, String senderName, int receiverId, String receiverName) {
     }
 
@@ -46,13 +45,7 @@ public class FriendDao {
         }
     }
 
-    /**
-     * Creates a pending request. A previously rejected request between the same
-     * two users is simply revived, which is what the UNIQUE constraint plus the
-     * upsert clause take care of.
-     *
-     * @return the id of the pending request row.
-     */
+
     public long createRequest(int senderId, int receiverId) throws SQLException {
         try (Connection c = Database.getConnection()) {
             try (PreparedStatement ps = c.prepareStatement(
@@ -63,7 +56,7 @@ public class FriendDao {
                 ps.setInt(2, receiverId);
                 ps.executeUpdate();
             }
-            // read the id back: after an upsert the generated-key value is unreliable
+
             try (PreparedStatement ps = c.prepareStatement(
                     "SELECT id FROM friend_requests WHERE sender_id = ? AND receiver_id = ?")) {
                 ps.setInt(1, senderId);
@@ -75,7 +68,7 @@ public class FriendDao {
         }
     }
 
-    /** Pending requests addressed to {@code userId}. */
+
     public List<FriendRequestDto> pendingFor(int userId) throws SQLException {
         List<FriendRequestDto> out = new ArrayList<>();
         try (Connection c = Database.getConnection();
@@ -93,13 +86,6 @@ public class FriendDao {
         return out;
     }
 
-    /**
-     * Accepts or rejects a pending request. The whole thing runs in one
-     * transaction so a half written friendship can never be observed.
-     *
-     * @return details of both parties, or null when the request does not exist,
-     *         is already answered, or is not addressed to {@code userId}.
-     */
     public Answered respond(long requestId, int userId, boolean accept) throws SQLException {
         try (Connection c = Database.getConnection()) {
             c.setAutoCommit(false);
@@ -173,7 +159,6 @@ public class FriendDao {
         return out;
     }
 
-    /** Ids only, used to broadcast presence changes. */
     public Set<Integer> friendIdsOf(int userId) throws SQLException {
         Set<Integer> ids = new HashSet<>();
         try (Connection c = Database.getConnection();

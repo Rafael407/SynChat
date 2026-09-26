@@ -5,10 +5,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Passwords are never stored in clear text. Each user gets a random 16 byte
- * salt; the database keeps salt + SHA-256(salt || password), both hex encoded.
- */
+
 public final class PasswordUtil {
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -33,7 +30,7 @@ public final class PasswordUtil {
         }
     }
 
-    /** Constant-time comparison, so a wrong password cannot be timed out. */
+
     public static boolean matches(String password, String saltHex, String expectedHash) {
         return MessageDigest.isEqual(
                 hash(password, saltHex).getBytes(StandardCharsets.UTF_8),

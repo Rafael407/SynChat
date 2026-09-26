@@ -13,7 +13,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-/** Username + password, or a jump to the registration screen. */
+
 public class LoginView extends VBox {
 
     private final ClientApp app;

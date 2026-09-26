@@ -1,7 +1,7 @@
 package com.synchat.client.Joke_api;
 
 /*
- Mirrors a "single" type response from https://v2.jokeapi.dev/joke/Any :
+  single response type from https://v2.jokeapi.dev/joke/Any :
     { "error": false, "category": "Any", "type": "single",  "joke": "...", "id": 123, "safe": true, "lang": "en" }
  */
 public class Joke {

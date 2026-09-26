@@ -1,6 +1,6 @@
 package com.synchat.common.dto;
 
-/** A user as seen by another user. */
+
 public class UserDto {
 
     public int id;

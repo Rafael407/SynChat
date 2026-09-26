@@ -13,12 +13,7 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
-/**
- * JavaFX entry point. Owns the single {@link ClientConnection} and swaps the
- * root node of the scene when moving between login / register / chat.
- *
- *   mvn javafx:run
- */
+
 public class ClientApp extends Application {
 
     private final ClientConnection connection = new ClientConnection();
@@ -37,7 +32,6 @@ public class ClientApp extends Application {
         connect();
     }
 
-    /** Opens the TCP connection to the local server. */
     private void connect() {
         String host = System.getProperty("server.host",Protocol.HOST);
         try {
@@ -62,7 +56,6 @@ public class ClientApp extends Application {
         setRoot(new LoginView(this, connection), 420, 320, "SynChat");
     }
 
-    /* ------------------------------------------------------- navigation */
 
     public void showLogin() {
         connection.clearAllListeners();

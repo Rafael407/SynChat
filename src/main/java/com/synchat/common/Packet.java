@@ -7,15 +7,11 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * One line on the wire. Serialised to a single-line JSON document.
- *
- * <pre>{ "type":"LOGIN", "id":"c-7", "data":{ "username":"ana", "password":"..." } }</pre>
- */
+
 public class Packet {
 
     private String type;
-    private String id;              // correlation id; null for server pushes
+    private String id;
     private JsonObject data = new JsonObject();
 
     public Packet() {
@@ -25,23 +21,23 @@ public class Packet {
         this.type = type;
     }
 
-    /* ------------------------------------------------------------ factory */
+
 
     public static Packet of(String type) {
         return new Packet(type);
     }
 
-    /** Successful RESPONSE. */
+
     public static Packet ok() {
         return new Packet(Protocol.RESPONSE).put("ok", true);
     }
 
-    /** Failed RESPONSE carrying a human readable reason. */
+
     public static Packet error(String message) {
         return new Packet(Protocol.RESPONSE).put("ok", false).put("message", message);
     }
 
-    /* ------------------------------------------------------------ writers */
+
 
     public Packet put(String key, String value) {
         data.addProperty(key, value);
@@ -58,13 +54,12 @@ public class Packet {
         return this;
     }
 
-    /** Serialises any POJO / collection into the data object. */
     public Packet putJson(String key, Object value) {
         data.add(key, JsonUtil.GSON.toJsonTree(value));
         return this;
     }
 
-    /* ------------------------------------------------------------ readers */
+
 
     public String getString(String key) {
         JsonElement e = data.get(key);
@@ -107,18 +102,18 @@ public class Packet {
         return (e != null && e.isJsonArray()) ? e.getAsJsonArray() : new JsonArray();
     }
 
-    /** Shortcut for the "ok" flag of a RESPONSE packet. */
+
     public boolean isOk() {
         return getBoolean("ok");
     }
 
-    /** Shortcut for the "message" field of a failed RESPONSE. */
+
     public String errorMessage() {
         String m = getString("message");
         return m == null ? "Unknown error" : m;
     }
 
-    /* ------------------------------------------------------- accessors */
+
 
     public String getType() {
         return type;
@@ -141,7 +136,7 @@ public class Packet {
         return data;
     }
 
-    /* ------------------------------------------------------ (de)serialise */
+
 
     public String toJson() {
         return JsonUtil.GSON.toJson(this);

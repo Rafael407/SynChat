@@ -11,15 +11,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Private message persistence, history and the offline queue. */
 public class MessageDao {
 
-    /**
-     * Stores a message.
-     *
-     * @param delivered true when the receiver was online and the packet was
-     *                  pushed straight away; false parks it in the offline queue.
-     */
+
     public ChatMessageDto save(int senderId, String senderName,
                                int receiverId, String receiverName,
                                String content, boolean delivered) throws SQLException {
@@ -53,7 +47,6 @@ public class MessageDao {
         }
     }
 
-    /** Last {@code limit} messages exchanged between two users, oldest first. */
     public List<ChatMessageDto> history(int userA, int userB, int limit) throws SQLException {
         List<ChatMessageDto> out = new ArrayList<>();
         try (Connection c = Database.getConnection();
@@ -80,7 +73,6 @@ public class MessageDao {
         return out;
     }
 
-    /** Messages that arrived while {@code userId} was offline. */
     public List<ChatMessageDto> undeliveredFor(int userId) throws SQLException {
         List<ChatMessageDto> out = new ArrayList<>();
         try (Connection c = Database.getConnection();

@@ -13,7 +13,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-/** Create an account, with an explicit "is this username free?" check. */
+
 public class RegisterView extends VBox {
 
     private final ClientApp app;
@@ -78,7 +78,6 @@ public class RegisterView extends VBox {
         getChildren().add(card);
     }
 
-    /** Asks the server whether the username is still free. */
     private void checkUsername() {
         String username = usernameField.getText().trim();
         if (username.isEmpty()) {

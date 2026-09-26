@@ -4,7 +4,6 @@ import com.synchat.common.Packet;
 import com.synchat.common.Protocol;
 
 import java.io.IOException;
-//import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -13,27 +12,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * SERVER ARCHITECTURE
- *
- *   main thread            accept loop, one blocking accept() per client
- *        |
- *        +--> ExecutorService (fixed pool of MAX_CONCURRENT_CLIENTS threads)
- *                 |
- *                 +--> ClientHandler  (one per socket, owns that session)
- *                 +--> ClientHandler
- *                 ...
- *
- *   SessionManager   shared, concurrent map  userId -> ClientHandler
- *   DAOs             stateless, one short lived JDBC connection per call
- *
- * The pool is deliberately *bounded*: connection number MAX+1 is queued and
- * only starts being served once a thread frees up. That is what keeps a local
- * simulation from spawning an unbounded number of threads.
- */
+
 public class ChatServer {
 
-    /** Size of the bounded worker pool. */
     public static final int MAX_CONCURRENT_CLIENTS = 20;
 
     private final int port;
@@ -59,7 +40,6 @@ public class ChatServer {
     }
 
     public void start() throws IOException {
-        // bound to the loopback address: the server is reachable from this machine only
         serverSocket = new ServerSocket(port, 50);
         running = true;
 
@@ -71,7 +51,7 @@ public class ChatServer {
         while (running) {
             try {
                 Socket socket = serverSocket.accept();
-                socket.setTcpNoDelay(true);      // chat messages are small, do not buffer them
+                socket.setTcpNoDelay(true);
                 pool.submit(new ClientHandler(socket, sessions));
             } catch (IOException e) {
                 if (running) {

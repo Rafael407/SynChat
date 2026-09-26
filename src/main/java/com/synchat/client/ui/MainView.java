@@ -31,7 +31,6 @@ import javafx.scene.shape.Circle;
 
 import java.util.List;
 
-/** The chat window: sidebar (friends / requests / search) plus a conversation pane. */
 public class MainView extends BorderPane {
 
     private final ClientApp app;
@@ -54,7 +53,7 @@ public class MainView extends BorderPane {
     private final TextField messageField = new TextField();
     private final Button sendButton = new Button("Send");
 
-    /** Username of the friend whose conversation is currently open. */
+
     private String currentPeer;
 
     public MainView(ClientApp app, ClientConnection connection, String me) {
@@ -72,10 +71,6 @@ public class MainView extends BorderPane {
         refreshRequests();
     }
 
-    /* ==================================================================== */
-    /*  layout                                                              */
-    /* ==================================================================== */
-
     private Region buildHeader() {
         Label brand = new Label("SynChat");
         Theme.titleStyle(brand, 16);
@@ -90,11 +85,18 @@ public class MainView extends BorderPane {
         Theme.secondaryButton(changePassword);
         changePassword.setOnAction(e -> Dialogs.changePassword(connection));
 
+        Button deleteAccount = new Button("Delete account");
+        Theme.dangerButton(deleteAccount);
+        deleteAccount.setOnAction(e -> Dialogs.deleteAccount(connection, () -> {
+            connection.clearAllListeners();
+            app.showLogin();
+        }));
+
         Button logout = new Button("Log out");
         Theme.secondaryButton(logout);
         logout.setOnAction(e -> doLogout());
 
-        HBox bar = new HBox(14, brand, who, spacer, changePassword, logout);
+        HBox bar = new HBox(14, brand, who, spacer, changePassword, deleteAccount, logout);
         bar.setPadding(new Insets(12, 16, 12, 16));
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.setBackground(Theme.fill(Theme.ACCENT_LIGHT, 0));
@@ -102,7 +104,7 @@ public class MainView extends BorderPane {
     }
 
     private Region buildSidebar() {
-        /* --- friends ---------------------------------------------------- */
+
         friendsView.setPlaceholder(new Label("No friends yet.\nFind people in the Search tab."));
         friendsView.setCellFactory(lv -> new ListCell<>() {
             private final Circle dot = new Circle(4);
@@ -140,7 +142,7 @@ public class MainView extends BorderPane {
         friendsBox.setPadding(new Insets(8));
         VBox.setVgrow(friendsView, Priority.ALWAYS);
 
-        /* --- incoming friend requests ----------------------------------- */
+
         requestsView.setPlaceholder(new Label("No pending requests."));
         requestsView.setCellFactory(lv -> new ListCell<>() {
             @Override
@@ -163,7 +165,6 @@ public class MainView extends BorderPane {
         requestsBox.setPadding(new Insets(8));
         VBox.setVgrow(requestsView, Priority.ALWAYS);
 
-        /* --- user search ------------------------------------------------ */
         TextField searchField = new TextField();
         searchField.setPromptText("Search username");
         Button searchButton = new Button("Go");
@@ -193,7 +194,6 @@ public class MainView extends BorderPane {
         searchBox.setPadding(new Insets(8));
         VBox.setVgrow(searchView, Priority.ALWAYS);
 
-        /* --- tabs -------------------------------------------------------- */
         Tab tabFriends = new Tab("Friends", friendsBox);
         Tab tabRequests = new Tab();
         tabRequests.setGraphic(requestsTabLabel);
@@ -267,12 +267,8 @@ public class MainView extends BorderPane {
         sendButton.setDisable(!enabled);
     }
 
-    /**
-     * Fetches a random joke from a public JSON API (JokeAPI) and drops it into
-     * the message box for the user to review and send — a chat-adjacent use of
-     * the same "call a REST API, parse the JSON into an object" pattern used
-     * by PostApiClient, but this one actually feeds into a real message.
-     * HttpClient.send() blocks, so the fetch runs off the FX thread.
+    /*
+     fetches a single joke from jokeapi.dev
      */
     private void fetchIcebreaker() {
         if (currentPeer == null) {
@@ -294,10 +290,6 @@ public class MainView extends BorderPane {
         worker.setDaemon(true);
         worker.start();
     }
-
-    /* ==================================================================== */
-    /*  server pushes (real-time)                                           */
-    /* ==================================================================== */
 
     private void registerServerEvents() {
         connection.clearAllListeners();
@@ -335,6 +327,18 @@ public class MainView extends BorderPane {
             }
         });
 
+        connection.on(Protocol.EVT_FRIEND_REMOVED, packet -> {
+            String who = packet.getString("username");
+            friends.removeIf(f -> f.username.equals(who));
+            status(who + " deleted their account");
+            if (who != null && who.equals(currentPeer)) {
+                currentPeer = null;
+                chatHeader.setText("Pick a friend on the left to start chatting");
+                messages.clear();
+                setChatEnabled(false);
+            }
+        });
+
         connection.on(Protocol.EVT_PRESENCE, packet -> {
             String who = packet.getString("username");
             boolean online = packet.getBoolean("online");
@@ -356,9 +360,6 @@ public class MainView extends BorderPane {
                 Dialogs.info("Server notice", packet.getString("message")));
     }
 
-    /* ==================================================================== */
-    /*  actions                                                             */
-    /* ==================================================================== */
 
     private void refreshFriends() {
         connection.send(Packet.of(Protocol.REQ_FRIEND_LIST), response -> {
@@ -476,8 +477,6 @@ public class MainView extends BorderPane {
             app.showLogin();
         });
     }
-
-    /* ------------------------------------------------------- helpers ---- */
 
     private void appendMessage(ChatMessageDto m) {
         messages.add(m);

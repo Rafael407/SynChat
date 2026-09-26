@@ -5,13 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-/**
- * Owns the SQLite file and creates the schema on first start.
- *
- * Each DAO call opens a short lived {@link Connection}. SQLite serialises
- * writers itself through file locking, and WAL mode keeps readers from
- * blocking, which is exactly what a pool of client handler threads needs.
- */
+
 public final class Database {
 
     private static String url;
@@ -44,7 +38,6 @@ public final class Database {
                         UNIQUE (sender_id, receiver_id)
                     )""");
 
-            // friendship is stored twice (a->b and b->a) so lookups stay trivial
             s.execute("""
                     CREATE TABLE IF NOT EXISTS friends (
                         user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

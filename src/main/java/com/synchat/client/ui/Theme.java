@@ -16,12 +16,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
-/**
- * A small, reusable palette plus a handful of styling helpers, all built with
- * plain JavaFX Java API (Background, Border, Color, Font, DropShadow). None
- * of this touches a stylesheet or Node.setStyle(...) — every visual here is
- * assembled from ordinary objects, not CSS text.
- */
 public final class Theme {
 
     public static final Color ACCENT = Color.web("#3B5BDB");        // primary brand blue
@@ -34,16 +28,15 @@ public final class Theme {
     public static final Color OFFLINE = Color.web("#B0B3BE");
     public static final Color BUBBLE_MINE = Color.web("#3B5BDB");
     public static final Color BUBBLE_THEIRS = Color.web("#E9E9EF");
+    public static final Color DANGER = Color.web("#E03131");
 
     private Theme() {
     }
 
-    /** Flat, rounded, filled background — no border. */
     public static Background fill(Color color, double radius) {
         return new Background(new BackgroundFill(color, new CornerRadii(radius), Insets.EMPTY));
     }
 
-    /** Rounded 1px border, transparent fill. */
     public static Border outline(Color color, double radius) {
         return new Border(new BorderStroke(color, BorderStrokeStyle.SOLID,
                 new CornerRadii(radius), new BorderWidths(1)));
@@ -58,7 +51,6 @@ public final class Theme {
         label.setTextFill(TEXT_MUTED);
     }
 
-    /** Solid accent button with white text and a soft drop shadow. */
     public static void primaryButton(Button button) {
         button.setBackground(fill(ACCENT, 6));
         button.setTextFill(Color.WHITE);
@@ -70,7 +62,6 @@ public final class Theme {
         button.setEffect(shadow);
     }
 
-    /** Outlined button, accent text, transparent fill — for secondary actions. */
     public static void secondaryButton(Button button) {
         button.setBackground(fill(Color.TRANSPARENT, 6));
         button.setBorder(outline(BORDER, 6));
@@ -78,7 +69,12 @@ public final class Theme {
         button.setPadding(new Insets(6, 16, 6, 16));
     }
 
-    /** A plain rounded card surface, for grouping content. */
+    public static void dangerButton(Button button) {
+        button.setBackground(fill(DANGER, 6));
+        button.setTextFill(Color.WHITE);
+        button.setPadding(new Insets(6, 16, 6, 16));
+    }
+
     public static void card(Region region) {
         region.setBackground(fill(SURFACE, 10));
         region.setBorder(outline(BORDER, 10));

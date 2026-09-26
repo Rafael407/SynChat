@@ -1,6 +1,6 @@
 package com.synchat.common.dto;
 
-/** A pending friend request waiting for the receiver's answer. */
+
 public class FriendRequestDto {
 
     public long id;

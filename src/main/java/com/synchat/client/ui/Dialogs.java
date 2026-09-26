@@ -10,9 +10,10 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 
-/** Tiny wrappers so views do not repeat Alert boilerplate. */
+
 public final class Dialogs {
 
     private Dialogs() {
@@ -30,7 +31,7 @@ public final class Dialogs {
         a.showAndWait();
     }
 
-    /** Old / new / confirm password, then fires CHANGE_PASSWORD. */
+
     public static void changePassword(ClientConnection connection) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Change password");
@@ -68,6 +69,49 @@ public final class Dialogs {
                     info("Change password", response.getString("message"));
                 } else {
                     error("Change password", response.errorMessage());
+                }
+            });
+        });
+    }
+
+
+    public static void deleteAccount(ClientConnection connection, Runnable onDeleted) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Delete account");
+        dialog.setHeaderText("This permanently deletes your account, friends, and message history.\n"
+                + "This cannot be undone.");
+
+        ButtonType deleteType = new ButtonType("Delete my account", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(deleteType, ButtonType.CANCEL);
+
+        PasswordField passwordField = new PasswordField();
+        TextField confirmField = new TextField();
+        confirmField.setPromptText("Type DELETE to confirm");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(15));
+        grid.addRow(0, new Label("Password"), passwordField);
+        grid.addRow(1, new Label("Type DELETE"), confirmField);
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result != deleteType) {
+                return;
+            }
+            if (!"DELETE".equals(confirmField.getText().trim())) {
+                error("Delete account", "Type DELETE (all caps) to confirm.");
+                return;
+            }
+            connection.send(Packet.of(Protocol.REQ_DELETE_ACCOUNT)
+                    .put("password", passwordField.getText()), response -> {
+
+                if (response.isOk()) {
+                    info("Account deleted", response.getString("message"));
+                    onDeleted.run();
+                } else {
+                    error("Delete account", response.errorMessage());
                 }
             });
         });

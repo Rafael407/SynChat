@@ -3,12 +3,7 @@ package com.synchat.server;
 import com.synchat.common.Protocol;
 import com.synchat.server.db.Database;
 
-/**
- * Entry point of the SynChat server.
- *
- *   mvn exec:java
- *   mvn exec:java -Dexec.args="5555 synchat.db"
- */
+
 public class ServerMain {
 
     public static void main(String[] args) throws Exception {

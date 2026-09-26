@@ -20,15 +20,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Serves exactly one client socket. An instance is submitted to the server's
- * thread pool, so the run() method *is* the thread of that client.
- *
- * Lifecycle: read a line -> parse a {@link Packet} -> dispatch -> write the
- * correlated RESPONSE back. Unsolicited events (incoming chat messages,
- * friend requests, presence) are written by *other* handler threads through
- * {@link #send(Packet)}, which is why that method is synchronized.
- */
+
 public class ClientHandler implements Runnable {
 
     private static final int HISTORY_LIMIT = 200;
@@ -43,7 +35,6 @@ public class ClientHandler implements Runnable {
 
     private PrintWriter out;
 
-    /** -1 until the client authenticates. */
     private volatile int userId = -1;
     private volatile String username;
 
@@ -51,10 +42,6 @@ public class ClientHandler implements Runnable {
         this.socket = socket;
         this.sessions = sessions;
     }
-
-    /* ==================================================================== */
-    /*  thread body                                                         */
-    /* ==================================================================== */
 
     @Override
     public void run() {
@@ -95,7 +82,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /** Writes one packet. Synchronized: several threads push into this socket. */
     public synchronized void send(Packet packet) {
         if (out != null && !socket.isClosed()) {
             out.println(packet.toJson());
@@ -120,9 +106,6 @@ public class ClientHandler implements Runnable {
         closeSocket();
     }
 
-    /* ==================================================================== */
-    /*  dispatch                                                            */
-    /* ==================================================================== */
 
     private Packet dispatch(Packet req) throws SQLException {
         String type = req.getType();
@@ -151,6 +134,8 @@ public class ClientHandler implements Runnable {
                 return handleLogout();
             case Protocol.REQ_CHANGE_PASSWORD:
                 return handleChangePassword(req);
+            case Protocol.REQ_DELETE_ACCOUNT:
+                return handleDeleteAccount(req);
             case Protocol.REQ_SEARCH_USER:
                 return handleSearch(req);
             case Protocol.REQ_FRIEND_ADD:
@@ -169,8 +154,6 @@ public class ClientHandler implements Runnable {
                 return Packet.error("Unknown request type: " + type);
         }
     }
-
-    /* ------------------------------------------------ authentication ---- */
 
     private Packet handleRegister(Packet req) throws SQLException {
         String name = trim(req.getString("username"));
@@ -255,7 +238,31 @@ public class ClientHandler implements Runnable {
         return Packet.ok().put("message", "Password updated");
     }
 
-    /* ------------------------------------------------- friend system ---- */
+    private Packet handleDeleteAccount(Packet req) throws SQLException {
+        String password = req.getString("password");
+        if (password == null || password.isEmpty()) {
+            return Packet.error("Enter your password to confirm");
+        }
+        if (userDao.authenticate(username, password) == null) {
+            return Packet.error("Password is incorrect");
+        }
+
+        // grab who to notify before the friendship rows are cascade-deleted
+        Set<Integer> friendIds = friendDao.friendIdsOf(userId);
+        String deletedName = username;
+        int deletedId = userId;
+
+        userDao.delete(deletedId);
+        sessions.unregister(deletedId, this);
+        sessions.sendToAll(friendIds, Packet.of(Protocol.EVT_FRIEND_REMOVED).put("username", deletedName));
+
+        log("'" + deletedName + "' deleted their account");
+        userId = -1;
+        username = null;
+
+        return Packet.ok().put("message", "Your account has been permanently deleted.");
+    }
+
 
     private Packet handleSearch(Packet req) throws SQLException {
         String query = trim(req.getString("query"));
@@ -307,13 +314,11 @@ public class ClientHandler implements Runnable {
             return Packet.error("That request is no longer pending");
         }
 
-        // tell the original sender what happened
         sessions.sendTo(answered.senderId(), Packet.of(Protocol.EVT_FRIEND_RESULT)
                 .put("username", answered.receiverName())
                 .put("accepted", accept));
 
         if (accept) {
-            // both sides should now see each other's presence
             sessions.sendTo(answered.senderId(), Packet.of(Protocol.EVT_PRESENCE)
                     .put("username", answered.receiverName())
                     .put("online", true));
@@ -340,13 +345,6 @@ public class ClientHandler implements Runnable {
         return Packet.ok().putJson("requests", friendDao.pendingFor(userId));
     }
 
-    /* ---------------------------------------------- private messaging --- */
-
-    /**
-     * The routing core. The sender is whoever owns this handler; the receiver
-     * is resolved by username, checked to be a friend, persisted, and then
-     * pushed into the receiver's own handler if that user is online.
-     */
     private Packet handleSendMessage(Packet req) throws SQLException {
         String to = trim(req.getString("to"));
         String content = req.getString("content");
@@ -391,7 +389,6 @@ public class ClientHandler implements Runnable {
                 messageDao.history(userId, other.id(), HISTORY_LIMIT));
     }
 
-    /** Drains anything that arrived while this user was offline. */
     private void flushOfflineMessages() throws SQLException {
         List<ChatMessageDto> pending = messageDao.undeliveredFor(userId);
         for (ChatMessageDto m : pending) {
@@ -402,8 +399,6 @@ public class ClientHandler implements Runnable {
             log("delivered " + pending.size() + " queued message(s) to '" + username + "'");
         }
     }
-
-    /* ------------------------------------------------------- helpers ---- */
 
     private void broadcastPresence(int id, String name, boolean online) {
         broadcastPresenceFor(id, name, online);

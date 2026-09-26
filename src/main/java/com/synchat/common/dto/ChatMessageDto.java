@@ -4,10 +4,10 @@ package com.synchat.common.dto;
 public class ChatMessageDto {
 
     public long id;
-    public String from;      // sender username
-    public String to;        // receiver username
+    public String from;
+    public String to;
     public String content;
-    public String sentAt;    // "yyyy-MM-dd HH:mm:ss"
+    public String sentAt;
 
     public ChatMessageDto() {
     }
@@ -20,7 +20,7 @@ public class ChatMessageDto {
         this.sentAt = sentAt;
     }
 
-    /** "HH:mm" part of the timestamp, for the chat view. */
+    //timestamp
     public String shortTime() {
         if (sentAt != null && sentAt.length() >= 16) {
             return sentAt.substring(11, 16);

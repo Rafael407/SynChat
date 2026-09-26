@@ -11,10 +11,9 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Everything that touches the {@code users} table. */
+
 public class UserDao {
 
-    /** Minimal row holder used internally for authentication. */
     public record UserRow(int id, String username, String hash, String salt) {
     }
 
@@ -28,7 +27,6 @@ public class UserDao {
         }
     }
 
-    /** @return the new user id, or -1 if the username was taken. */
     public int create(String username, String password) throws SQLException {
         String salt = PasswordUtil.newSalt();
         String hash = PasswordUtil.hash(password, salt);
@@ -79,7 +77,6 @@ public class UserDao {
         }
     }
 
-    /** @return the user row when the password is correct, otherwise null. */
     public UserRow authenticate(String username, String password) throws SQLException {
         UserRow row = findByUsername(username);
         if (row == null) {
@@ -101,7 +98,16 @@ public class UserDao {
         }
     }
 
-    /** Substring search, excluding the caller. */
+
+    public void delete(int userId) throws SQLException {
+        try (Connection c = Database.getConnection();
+             PreparedStatement ps = c.prepareStatement("DELETE FROM users WHERE id = ?")) {
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+        }
+    }
+
+
     public List<UserDto> search(String query, int excludeUserId) throws SQLException {
         List<UserDto> out = new ArrayList<>();
         try (Connection c = Database.getConnection();

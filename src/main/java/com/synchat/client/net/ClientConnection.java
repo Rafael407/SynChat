@@ -20,23 +20,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-/**
- * CLIENT ARCHITECTURE
- *
- *   JavaFX Application Thread      draws the UI, never blocks on I/O
- *        |  request(packet) -> CompletableFuture
- *        v
- *   ClientConnection  (socket, writer)
- *        ^
- *        |  one line per packet
- *   listener thread                the "real-time receiving" thread: it does
- *                                  nothing but readLine() in a loop
- *
- * Incoming packets are split in two:
- *   - it has an id we are waiting on  -> complete the matching future
- *   - it has no id                    -> a server push, handed to the event
- *                                        listeners on the FX thread
- */
+/*
+ CLIENT ARCHITECTURE
+
+ JavaFX Application Thread      draws the UI, never blocks on I/O
+      |  request(packet) -> CompletableFuture
+      v
+ ClientConnection  (socket, writer)
+      ^
+      |
+  listener thread
+
+*/
 public class ClientConnection {
 
     private Socket socket;
@@ -50,8 +45,6 @@ public class ClientConnection {
     private volatile boolean connected;
     private Runnable onDisconnect = () -> {
     };
-
-    /* ----------------------------------------------------------- connect */
 
     public void connect(String host, int port) throws IOException {
         socket = new Socket();
@@ -75,7 +68,6 @@ public class ClientConnection {
         this.onDisconnect = action;
     }
 
-    /* ---------------------------------------------------- listener loop */
 
     private void listenLoop() {
         try (BufferedReader in = new BufferedReader(
@@ -96,7 +88,7 @@ public class ClientConnection {
                 route(packet);
             }
         } catch (IOException e) {
-            // socket closed
+
         } finally {
             connected = false;
             failAllPending("Connection to the server was lost");
@@ -113,7 +105,6 @@ public class ClientConnection {
                 return;
             }
         }
-        // server push: hand it to the UI thread
         List<Consumer<Packet>> handlers = listeners.get(packet.getType());
         if (handlers != null) {
             Platform.runLater(() -> handlers.forEach(h -> h.accept(packet)));
@@ -125,12 +116,7 @@ public class ClientConnection {
         pending.clear();
     }
 
-    /* -------------------------------------------------------- outgoing */
 
-    /**
-     * Sends a request and returns a future that completes when the matching
-     * RESPONSE arrives. Never blocks the caller.
-     */
     public CompletableFuture<Packet> request(Packet packet) {
         CompletableFuture<Packet> future = new CompletableFuture<>();
         if (!connected) {
@@ -146,20 +132,14 @@ public class ClientConnection {
         return future;
     }
 
-    /**
-     * Convenience wrapper: runs {@code callback} on the JavaFX thread with the
-     * server's answer, so view code stays free of threading noise.
-     */
     public void send(Packet packet, Consumer<Packet> callback) {
         request(packet).thenAccept(response -> Platform.runLater(() -> callback.accept(response)));
     }
 
-    /** Registers a handler for a server push type, e.g. {@link Protocol#EVT_MESSAGE}. */
     public void on(String eventType, Consumer<Packet> handler) {
         listeners.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>()).add(handler);
     }
 
-    /** Drops every handler for one event type (used when a view is replaced). */
     public void clearListeners(String eventType) {
         listeners.remove(eventType);
     }
