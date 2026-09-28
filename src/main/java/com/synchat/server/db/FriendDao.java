@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 
-public class FriendDao {
+public class FriendDao{
 
     public record Answered(int senderId, String senderName, int receiverId, String receiverName) {
     }
